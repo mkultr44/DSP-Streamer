@@ -1,0 +1,12 @@
+[Unit]
+Description=Librespot Spotify Connect
+After=network.target sound.target
+
+[Service]
+ExecStart=/usr/local/bin/librespot --name "DSP-Streamer" --backend alsa --device hw:Loopback,0,0 --bitrate 320 --initial-volume 100
+Restart=always
+User=root
+Group=audio
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,214 @@
+devices:
+  samplerate: 44100
+  chunksize: 1024
+  target_level: 0
+  capture:
+    type: Alsa
+    channels: 2
+    device: "hw:Loopback,1,0"
+    format: S16LE
+  playback:
+    type: Alsa
+    channels: 8 # UltraLite mk5 has more, but we only use first few
+    device: "hw:UltraLiteMk5" # User must update this!
+    format: S24LE3
+
+mixers:
+  # Main mixer to route inputs to processing channels and handle Mono Sum
+  to_channels:
+    channels:
+      in: 2
+      out: 3 # 0=Left, 1=Right, 2=Sub
+    mapping:
+      - dest: 0
+        sources:
+          - channel: 0
+            gain: 0
+            inverted: false
+      - dest: 1
+        sources:
+          - channel: 1
+            gain: 0
+            inverted: false
+      - dest: 2 # Sub sum
+        sources:
+          - channel: 0
+            gain: -6.0 # -6dB ensures sum doesn't clip (0.5)
+            inverted: false
+          - channel: 1
+            gain: -6.0
+            inverted: false
+
+  # Final mixer to route to hardware outputs
+  to_output:
+    channels:
+      in: 3
+      out: 8
+    mapping:
+      - dest: 0 # Out 1
+        sources: 
+          - channel: 0
+            gain: 0
+            inverted: false
+      - dest: 1 # Out 2
+        sources: 
+          - channel: 1
+            gain: 0
+            inverted: false
+      - dest: 2 # Out 3 (Sub)
+        sources: 
+          - channel: 2
+            gain: 0
+            inverted: false
+      - dest: 3 # Out 4 (Sub mirror)
+        sources: 
+          - channel: 2
+            gain: 0
+            inverted: false
+
+filters:
+  # Input High Pass (Rumble Filter)
+  input_hpf:
+    type: Biquad
+    parameters:
+      type: Highpass
+      freq: 20
+      q: 0.707
+
+  # Crossover Filters (LR24)
+  xo_low_lp:
+    type: Biquad
+    parameters:
+      type: Lowpass
+      freq: 80
+      q: 0.707
+  xo_low_lp_2: # LR24 is two Butterworths derived, but Camilla has LinkwitzRiley specific? No, standard is cascade 2 Butterworths or use LinkwitzRiley type
+    type: LinkwitzRileyLowpass
+    parameters:
+      freq: 80
+      order: 4
+  
+  xo_high_hp:
+    type: LinkwitzRileyHighpass
+    parameters:
+      freq: 80
+      order: 4
+
+  # Gain
+  gain_master:
+    type: Gain
+    parameters:
+      gain: 0
+      inverted: false
+      mute: false
+  
+  gain_l:
+    type: Gain
+    parameters:
+      gain: 0
+      inverted: false
+      mute: false
+  gain_r:
+    type: Gain
+    parameters:
+      gain: 0
+      inverted: false
+      mute: false
+  gain_sub:
+    type: Gain
+    parameters:
+      gain: 0
+      inverted: false
+      mute: false
+
+  # Delays
+  delay_l:
+    type: Delay
+    parameters:
+      delay: 0
+      unit: ms
+  delay_r:
+    type: Delay
+    parameters:
+      delay: 0
+      unit: ms
+  delay_sub:
+    type: Delay
+    parameters:
+      delay: 0
+      unit: ms
+
+  # FIR Placeholders (User will load these)
+  # Ideally we configure bypass or identity if file missing? 
+  # CamillaDSP requires valid file if convolution is used.
+  # We can't default to Convolution without a file. 
+  # So we omit them in the default config or use a dummy identity wav?
+  # Best to define them but maybe bypass them or use Null filter if that exists? 
+  # Or just comments for now, and the UI adds them.
+  # "Pre-PEQ" placeholder
+  peq_1:
+    type: Biquad
+    parameters:
+      type: Peaking
+      freq: 1000
+      q: 1.0
+      gain: 0
+
+pipeline:
+  # Master Processing
+  - type: Filter
+    channel: 0
+    names:
+      - gain_master
+      - input_hpf
+      - peq_1
+  - type: Filter
+    channel: 1
+    names:
+      - gain_master
+      - input_hpf
+      - peq_1
+
+  # Split Logic via Mixer?
+  # CamillaDSP pipeline is linear per channel unless we mix.
+  # We need to mix L+R to Sub channel.
+  # So:
+  # 1. Process L/R inputs (EQ, HPF)
+  # 2. Mix to L, R, Sub (3 channels)
+  # 3. Process L, R (XO HP, Delay, FIR, Gain)
+  # 4. Process Sub (XO LP, Delay, FIR, Gain)
+  # 5. Output mixer
+
+  - type: Mixer
+    name: to_channels
+
+  # Post-Mixer Processing
+  # Channel 0 = L
+  - type: Filter
+    channel: 0
+    names:
+      - xo_high_hp
+      - delay_l
+      - gain_l
+      # - fir_l # Add via UI
+  
+  # Channel 1 = R
+  - type: Filter
+    channel: 1
+    names:
+      - xo_high_hp
+      - delay_r
+      - gain_r
+      # - fir_r # Add via UI
+  
+  # Channel 2 = Sub
+  - type: Filter
+    channel: 2
+    names:
+      - xo_low_lp_2
+      - delay_sub
+      - gain_sub
+      # - fir_sub # Add via UI
+
+  - type: Mixer
+    name: to_output

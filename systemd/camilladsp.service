@@ -1,0 +1,13 @@
+[Unit]
+Description=CamillaDSP Daemon
+After=syslog.target audio.target
+
+[Service]
+Type=simple
+ExecStart=/usr/local/bin/camilladsp -p 1234 /etc/camilladsp/default.yml --logfile /var/log/camilladsp.log
+Restart=always
+User=root
+Group=audio
+
+[Install]
+WantedBy=multi-user.target

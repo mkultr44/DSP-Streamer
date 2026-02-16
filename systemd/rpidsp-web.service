@@ -1,0 +1,14 @@
+[Unit]
+Description=DSP Streamer Web Interface
+After=network.target camilladsp.service
+
+[Service]
+Type=simple
+User=root
+WorkingDirectory=/opt/dsp-streamer
+Environment="PATH=/opt/dsp-streamer/venv/bin:/usr/local/bin:/usr/bin:/bin"
+ExecStart=/opt/dsp-streamer/venv/bin/uvicorn backend.main:app --host 0.0.0.0 --port 8000
+Restart=always
+
+[Install]
+WantedBy=multi-user.target
