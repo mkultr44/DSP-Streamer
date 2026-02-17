@@ -58,14 +58,16 @@ apt-get install -y gmediarender
 # Trying to find a prebuilt binary or use cargo if necessary.
 if ! command -v librespot &> /dev/null; then
     echo "Installing Librespot (via Cargo, this may take a while)..."
-    apt-get install -y cargo rustc
+    # Install Rust via rustup to get latest version (apt version is too old for 2024 edition)
+    curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
+    source $HOME/.cargo/env
     ARCH=$(dpkg --print-architecture)
     if [ "$ARCH" = "arm64" ]; then
         echo "Detected ARM64 - enabling NEON optimizations"
-        RUSTFLAGS='-C target-feature=+neon -C target-cpu=native' cargo install librespot --root /usr/local
+        RUSTFLAGS='-C target-feature=+neon -C target-cpu=native' source $HOME/.cargo/env; cargo install librespot --root /usr/local
     else
         echo "Detected $ARCH - using native CPU optimizations"
-        RUSTFLAGS='-C target-cpu=native' cargo install librespot --root /usr/local
+        RUSTFLAGS='-C target-cpu=native' source $HOME/.cargo/env; cargo install librespot --root /usr/local
     fi
 fi
 
