@@ -18,7 +18,7 @@ echo "Stopping existing services..."
 systemctl stop camilladsp shairport-sync gmediarender librespot camillagui || true
 
 echo "Installing core dependencies..."
-apt-get install -y git curl wget build-essential pkg-config libasound2-dev alsa-utils python3-pip python3-venv
+apt-get install -y git curl wget build-essential pkg-config libasound2-dev alsa-utils python3-pip python3-venv protobuf-compiler
 
 # Install Node.js (for frontend build)
 if ! command -v node &> /dev/null; then
@@ -61,13 +61,14 @@ if ! command -v librespot &> /dev/null; then
     # Install Rust via rustup to get latest version (apt version is too old for 2024 edition)
     curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
     source $HOME/.cargo/env
+    
     ARCH=$(dpkg --print-architecture)
     if [ "$ARCH" = "arm64" ]; then
         echo "Detected ARM64 - enabling NEON optimizations"
-        RUSTFLAGS='-C target-feature=+neon -C target-cpu=native' source $HOME/.cargo/env; cargo install librespot --root /usr/local
+        RUSTFLAGS='-C target-feature=+neon -C target-cpu=native' cargo install librespot --locked --root /usr/local
     else
         echo "Detected $ARCH - using native CPU optimizations"
-        RUSTFLAGS='-C target-cpu=native' source $HOME/.cargo/env; cargo install librespot --root /usr/local
+        RUSTFLAGS='-C target-cpu=native' cargo install librespot --locked --root /usr/local
     fi
 fi
 
