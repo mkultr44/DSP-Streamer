@@ -1,0 +1,7 @@
+---
+common:
+  bind_address: "0.0.0.0"
+  port: 5005
+  title: "DSP Streamer"
+camilla_host: "127.0.0.1"
+camilla_port: 1234

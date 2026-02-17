@@ -18,7 +18,7 @@ echo "Stopping existing services..."
 systemctl stop camilladsp shairport-sync gmediarender librespot camillagui || true
 
 echo "Installing core dependencies..."
-apt install -y git curl wget build-essential pkg-config libasound2-dev alsa-utils python3-pip python3-venv protobuf-compiler unzip
+apt-get install -y git curl wget build-essential pkg-config libasound2-dev alsa-utils python3-pip python3-venv protobuf-compiler unzip
 
 # Install Node.js (for frontend build)
 if ! command -v node &> /dev/null; then
@@ -132,6 +132,13 @@ python3 -m venv "$GUI_DIR/venv"
 # Config Files
 echo "Copying Configuration Files..."
 cp config-templates/camilladsp.yml /etc/camilladsp/default.yml
+
+# Check if GUI config dir exists, create if not
+mkdir -p "$GUI_DIR/config"
+# Copy default GUI config if not present, or overwrite? 
+# To fix binding issue, overwrite is safer, but backup first?
+# We already backup at start of script.
+cp config-templates/camillagui.yml "$GUI_DIR/config/camillagui.yml"
 
 # Systemd Services
 echo "Installing Systemd Services..."
