@@ -18,7 +18,7 @@ echo "Stopping existing services..."
 systemctl stop camilladsp shairport-sync gmediarender librespot camillagui || true
 
 echo "Installing core dependencies..."
-apt-get install -y git curl wget build-essential pkg-config libasound2-dev alsa-utils python3-pip python3-venv protobuf-compiler
+apt install -y git curl wget build-essential pkg-config libasound2-dev alsa-utils python3-pip python3-venv protobuf-compiler unzip
 
 # Install Node.js (for frontend build)
 if ! command -v node &> /dev/null; then
