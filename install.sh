@@ -59,7 +59,14 @@ apt-get install -y gmediarender
 if ! command -v librespot &> /dev/null; then
     echo "Installing Librespot (via Cargo, this may take a while)..."
     apt-get install -y cargo rustc
-    cargo install librespot --root /usr/local
+    ARCH=$(dpkg --print-architecture)
+    if [ "$ARCH" = "arm64" ]; then
+        echo "Detected ARM64 - enabling NEON optimizations"
+        RUSTFLAGS='-C target-feature=+neon -C target-cpu=native' cargo install librespot --root /usr/local
+    else
+        echo "Detected $ARCH - using native CPU optimizations"
+        RUSTFLAGS='-C target-cpu=native' cargo install librespot --root /usr/local
+    fi
 fi
 
 # Configure ALSA Loopback
