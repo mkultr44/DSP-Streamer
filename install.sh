@@ -101,10 +101,12 @@ rm -rf "$GUI_DIR"
 
 # Clone or download release (Using git clone for latest)
 # NOTE: The git repo contains source code. For the backend + built frontend, we need the release zip.
-CAMILLAGUI_VER="v2.1.1" # Latest stable as of knowledge cutoff, or dynamically find?
-# Let's try to get the latest release URL dynamically or use a fixed one.
-# For stability, fixed is better.
-wget -O /tmp/camillagui.zip "https://github.com/HEnquist/camillagui/releases/download/$CAMILLAGUI_VER/camillagui.zip"
+CAMILLAGUI_VER="v2.1.1" 
+# The releases have moved to camillagui-backend or similar? 
+# Search suggests HEnquist/camillagui-backend. Let's try that.
+# Also, v2.1.1 might be on the old repo but under a different tag?
+# Actually, let's try HEnquist/camillagui-backend.
+wget -O /tmp/camillagui.zip "https://github.com/HEnquist/camillagui-backend/releases/download/$CAMILLAGUI_VER/camillagui.zip"
 unzip /tmp/camillagui.zip -d "$GUI_DIR"
 rm /tmp/camillagui.zip
 
