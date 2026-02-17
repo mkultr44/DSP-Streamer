@@ -44,25 +44,29 @@ By default, the system assumes a generic USB output. You **must** identify your 
    sudo systemctl restart camilladsp
    ```
 
-### Web Interface
-Access the UI at: `http://<your-pi-ip>:8000`
+### Web Interface (CamillaGUI)
+Access the UI at: `http://<your-pi-ip>:5005`
 
-- **Status**: View system state and sample rate.
-- **Controls**: Adjust Master Gain, Channel Gains, and Delays.
-- **FIR Manager**: Upload `.wav` FIR filters for Left, Right, and Sub channels.
+The official CamillaDSP GUI provides full control over the DSP pipeline:
+- **Status**: View detailed system state, buffer levels, and performace.
+- **Pipeline Editor**: Visually edit the filter pipeline.
+- **Files**: Manage config and coefficient files directly.
+- **Volume**: Master volume control.
+
+**Note**: To use the system effectively, ensure you switch to the "Configs" tab and load the default configuration if it's not already active.
 
 ## Services
 - `camilladsp` - Core DSP engine
 - `shairport-sync` - AirPlay receiver
 - `librespot` - Spotify Connect
 - `gmediarender` - DLNA renderer
-- `rpidsp-web` - Web Interface & API
+- `camillagui` - CamillaDSP Web GUI
 
 Check status:
 ```bash
-sudo systemctl status camilladsp
+sudo systemctl status camillagui
 ```
 
 ## Logs
 - CamillaDSP Application Log: `/var/log/camilladsp.log`
-- Web UI Log: `journalctl -u rpidsp-web -f`
+- CamillaGUI Log: `journalctl -u camillagui -f`

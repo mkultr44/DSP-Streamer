@@ -9,7 +9,13 @@ if [ "$EUID" -ne 0 ]; then
 fi
 
 echo "Updating system..."
+# Prevent interactive prompts
+export DEBIAN_FRONTEND=noninteractive
 apt-get update && apt-get upgrade -y
+
+# Stop existing services if running
+echo "Stopping existing services..."
+systemctl stop camilladsp shairport-sync gmediarender librespot camillagui || true
 
 echo "Installing core dependencies..."
 apt-get install -y git curl wget build-essential pkg-config libasound2-dev alsa-utils python3-pip python3-venv
@@ -68,44 +74,69 @@ mkdir -p /etc/camilladsp/configs
 mkdir -p /etc/camilladsp/coeff
 mkdir -p /var/lib/dsp-streamer
 
-# Backend Setup
-echo "Setting up Backend (FastAPI)..."
-APP_DIR="/opt/dsp-streamer"
-mkdir -p "$APP_DIR"
-cp -r backend "$APP_DIR/"
-cp -r frontend "$APP_DIR/"
+# Install CamillaGUI
+echo "Installing CamillaGUI..."
+# Install dependencies
+apt-get install -y python3-setuptools python3-wheel
+# Create directory for GUI
+GUI_DIR="/opt/camillagui"
 
-# Create venv and install python deps
-python3 -m venv "$APP_DIR/venv"
-"$APP_DIR/venv/bin/pip" install fastapi uvicorn websockets pyyaml aiofiles stringcase
+# Backup existing config if present
+if [ -f "$GUI_DIR/config/camillagui.yml" ]; then
+    cp "$GUI_DIR/config/camillagui.yml" /tmp/camillagui_backup.yml
+fi
 
-# Build Frontend
-echo "Building Frontend..."
-cd "$APP_DIR/frontend"
-npm install
-npm run build
-cd -
+# Clean old install
+rm -rf "$GUI_DIR"
+mkdir -p "$GUI_DIR"
+
+# Clone or download release (Using git clone for latest)
+git clone https://github.com/HEnquist/camillagui.git "$GUI_DIR"
+
+# Restore backup config if it existed
+if [ -f "/tmp/camillagui_backup.yml" ]; then
+    mkdir -p "$GUI_DIR/config"
+    cp /tmp/camillagui_backup.yml "$GUI_DIR/config/camillagui.yml"
+fi
+
+# Create venv and install deps
+echo "Setting up CamillaGUI environment..."
+python3 -m venv "$GUI_DIR/venv"
+"$GUI_DIR/venv/bin/pip" install -r "$GUI_DIR/requirements.txt"
+# Optional: install websocket-client if needed for some features
+"$GUI_DIR/venv/bin/pip" install websocket-client
+
+# Configure CamillaGUI
+# We can use the default config or create one if needed across specific ports
+# By default it connects to 127.0.0.1:1234 (CamillaDSP) and serves on 0.0.0.0:5005
+# This matches our setup.
 
 # Config Files
 echo "Copying Configuration Files..."
 cp config-templates/camilladsp.yml /etc/camilladsp/default.yml
-# Ensure camilladsp config points to correct devices (placeholders for now)
 
 # Systemd Services
 echo "Installing Systemd Services..."
+# Remove old services first to ensure clean state
+rm -f /etc/systemd/system/camilladsp.service
+rm -f /etc/systemd/system/shairport-sync.service
+rm -f /etc/systemd/system/gmediarender.service
+rm -f /etc/systemd/system/librespot.service
+rm -f /etc/systemd/system/camillagui.service
+rm -f /etc/systemd/system/rpidsp-web.service # Clean up legacy service
+
 cp systemd/*.service /etc/systemd/system/
 systemctl daemon-reload
 
 echo "Enabling Services..."
-systemctl enable camilladsp shairport-sync gmediarender librespot rpidsp-web
+systemctl enable camilladsp shairport-sync gmediarender librespot camillagui
 
 echo "Starting Services..."
-# We might not want to start them immediately if config is missing, but let's try
 systemctl restart shairport-sync || true
 systemctl restart gmediarender || true
 # Librespot and CamillaDSP need configured config files first
 
 echo "------------------------------------------------"
 echo "Installation Complete!"
-echo "Access the Web UI at: http://$(hostname -I | awk '{print $1}'):8000"
+echo "Access the CamillaGUI at: http://$(hostname -I | awk '{print $1}'):5005"
 echo "------------------------------------------------"

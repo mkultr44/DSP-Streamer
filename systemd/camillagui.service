@@ -1,0 +1,14 @@
+[Unit]
+Description=CamillaDSP Web GUI
+After=network.target camilladsp.service
+
+[Service]
+Type=simple
+User=root
+WorkingDirectory=/opt/camillagui
+Environment="PATH=/opt/camillagui/venv/bin:/usr/local/bin:/usr/bin:/bin"
+ExecStart=/opt/camillagui/venv/bin/python3 /opt/camillagui/main.py
+Restart=always
+
+[Install]
+WantedBy=multi-user.target
