@@ -100,8 +100,13 @@ fi
 rm -rf "$GUI_DIR"
 
 # Clone or download release (Using git clone for latest)
-# Let git create the directory to avoid "empty directory" checks
-git clone https://github.com/HEnquist/camillagui.git "$GUI_DIR"
+# NOTE: The git repo contains source code. For the backend + built frontend, we need the release zip.
+CAMILLAGUI_VER="v2.1.1" # Latest stable as of knowledge cutoff, or dynamically find?
+# Let's try to get the latest release URL dynamically or use a fixed one.
+# For stability, fixed is better.
+wget -O /tmp/camillagui.zip "https://github.com/HEnquist/camillagui/releases/download/$CAMILLAGUI_VER/camillagui.zip"
+unzip /tmp/camillagui.zip -d "$GUI_DIR"
+rm /tmp/camillagui.zip
 
 # Restore backup config if it existed
 if [ -f "/tmp/camillagui_backup.yml" ]; then
@@ -112,18 +117,8 @@ fi
 # Create venv and install deps
 echo "Setting up CamillaGUI environment..."
 python3 -m venv "$GUI_DIR/venv"
-
-# Install dependencies with fallback
-if [ -f "$GUI_DIR/requirements.txt" ]; then
-    "$GUI_DIR/venv/bin/pip" install -r "$GUI_DIR/requirements.txt"
-elif [ -f "$GUI_DIR/pyproject.toml" ] || [ -f "$GUI_DIR/setup.py" ]; then
-    echo "requirements.txt not found, attempting install via pip..."
-    "$GUI_DIR/venv/bin/pip" install "$GUI_DIR"
-else
-    echo "ERROR: Could not find requirements.txt or setup files in $GUI_DIR"
-    ls -la "$GUI_DIR"
-    exit 1
-fi
+"$GUI_DIR/venv/bin/pip" install -r "$GUI_DIR/requirements.txt"
+"$GUI_DIR/venv/bin/pip" install websocket-client aiohttp jsonschema
 # Optional: install websocket-client if needed for some features
 "$GUI_DIR/venv/bin/pip" install websocket-client
 
