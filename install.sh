@@ -98,9 +98,9 @@ fi
 
 # Clean old install
 rm -rf "$GUI_DIR"
-mkdir -p "$GUI_DIR"
 
 # Clone or download release (Using git clone for latest)
+# Let git create the directory to avoid "empty directory" checks
 git clone https://github.com/HEnquist/camillagui.git "$GUI_DIR"
 
 # Restore backup config if it existed
@@ -112,7 +112,18 @@ fi
 # Create venv and install deps
 echo "Setting up CamillaGUI environment..."
 python3 -m venv "$GUI_DIR/venv"
-"$GUI_DIR/venv/bin/pip" install -r "$GUI_DIR/requirements.txt"
+
+# Install dependencies with fallback
+if [ -f "$GUI_DIR/requirements.txt" ]; then
+    "$GUI_DIR/venv/bin/pip" install -r "$GUI_DIR/requirements.txt"
+elif [ -f "$GUI_DIR/pyproject.toml" ] || [ -f "$GUI_DIR/setup.py" ]; then
+    echo "requirements.txt not found, attempting install via pip..."
+    "$GUI_DIR/venv/bin/pip" install "$GUI_DIR"
+else
+    echo "ERROR: Could not find requirements.txt or setup files in $GUI_DIR"
+    ls -la "$GUI_DIR"
+    exit 1
+fi
 # Optional: install websocket-client if needed for some features
 "$GUI_DIR/venv/bin/pip" install websocket-client
 
